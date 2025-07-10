@@ -1,0 +1,122 @@
+{
+  "name": "SubWriter",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "filepath"
+            },
+            {
+              "name": "content"
+            },
+            {
+              "name": "index"
+            }
+          ]
+        }
+      },
+      "id": "8e9f95e2-aa43-4ca7-9e6a-4fe8bb1a3091",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const content = $json[\"{{ $('When Executed by Another Workflow').item.json.content }}\"] || \"\";\n\nconst buffer = Buffer.from(content, 'utf8');\n\nreturn [\n  {\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        mimeType: 'text/plain',\n        fileName: 'output.txt'\n      }\n    }\n  }\n];"
+      },
+      "id": "9078a43a-7b01-41e0-9bf0-accd961499ee",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "=/repos/repo_{{ $('When Executed by Another Workflow').item.json.index }}/{{ $('GetRepoName').item.json.stdout }}/{{ $('When Executed by Another Workflow').item.json.filepath }}\n",
+        "dataPropertyName": "=data",
+        "options": {}
+      },
+      "id": "762f206f-0176-4afb-9983-5c23e34db62e",
+      "name": "Write File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=ls /repos/repo_{{ $json.index }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "id": "159a3a9a-a0bf-42b8-912f-ac041938d6f5",
+      "name": "GetRepoName"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "GetRepoName",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Write File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        []
+      ]
+    },
+    "GetRepoName": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4c38ae13-0c52-4af0-8a5e-f7f2f2838080",
+  "meta": {
+    "instanceId": "2a2ba91bfe084453082bc30e3b8dcaea039b6ff20357bf7f8e2759837850e190"
+  },
+  "id": "u7hl7u0wQCVocscf",
+  "tags": []
+}

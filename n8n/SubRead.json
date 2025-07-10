@@ -1,0 +1,90 @@
+{
+  "name": "SubRead",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "filepath"
+            },
+            {
+              "name": "index"
+            }
+          ]
+        }
+      },
+      "id": "f544e745-70c8-4d1b-adab-74a90b3dd0fc",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/repos/repo_{{ $json.index }}/*/{{ $json.filepath }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ],
+      "id": "5db9f4d8-ecec-4f2d-b11c-45cfd701ef05",
+      "name": "Read/Write Files from Disk",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.map(item => {\n  const data = item.binary.data;\n  const content = Buffer.from(data.data, 'base64').toString('utf8');\n  return {\n    json: {\n      content\n    }\n  };\n});"
+      },
+      "id": "b7b796d0-37d5-4f37-8809-5fb719528140",
+      "name": "Extract Text",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "94619ec5-6c1d-4d01-b87f-54f4629e6704",
+  "meta": {
+    "instanceId": "2a2ba91bfe084453082bc30e3b8dcaea039b6ff20357bf7f8e2759837850e190"
+  },
+  "id": "Z6K7NmbHjWSKU8JK",
+  "tags": []
+}

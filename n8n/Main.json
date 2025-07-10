@@ -1,0 +1,755 @@
+{
+  "name": "Main",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        -100
+      ],
+      "id": "6ff77438-05f1-4339-a73d-758645bff61e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=mkdir -p /repos/repo_{{ $json.taskNumber }} && cd /repos/repo_{{ $json.taskNumber }} && {{ $json.git_clone }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        40
+      ],
+      "id": "6623ca7f-4a09-4102-b889-c00afc226c2d",
+      "name": "CLONE",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:8081/task/index/{{ $json.counter }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -840,
+        -160
+      ],
+      "id": "7fd2b8a5-f67d-4fac-a67d-763d2755d8eb",
+      "name": "Get Issues"
+    },
+    {
+      "parameters": {
+        "jsCode": "return Array.from({length: 30}, (_, i) => {\n  return { json: { issue: i + 1 } };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1900,
+        -300
+      ],
+      "id": "f6bb4bf1-e259-46ab-9d34-ffd7368fadd0",
+      "name": "1-5 genrierer"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Problem description:\n{{ $('Get Issues').item.json.Problem_statement }}",
+        "options": {
+          "systemMessage": "You are a helpful AI coding assistant. You've got a problem description which is a issue. Read in the files and fix the the issue. Then send your fix back to the file and write it. After that add the changed files with the git add tool. Make sure the fix is minimal and only touches what's necessary to resolve the failing tests.",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -140
+      ],
+      "id": "0011b0f8-af28-4018-9c8b-a091dedb6200",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        520
+      ],
+      "id": "58a8f7f0-7c9e-4e7b-8b0a-b49ca654fb5c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VlY7pbovpIL72gJ0",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Get Issues').item.json.taskNumber }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        340
+      ],
+      "id": "000eb661-bacd-43f7-b61d-926a61cedec4",
+      "name": "Simple Memory",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "description": "Call this Tool to get the content of a file. You have to give the complete file path. ",
+        "workflowId": {
+          "__rl": true,
+          "value": "Z6K7NmbHjWSKU8JK",
+          "mode": "list",
+          "cachedResultName": "SubRead"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "filepath": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filepath', ``, 'string') }}",
+            "index": "={{ $('Get Issues').item.json.taskNumber }}"
+          },
+          "matchingColumns": [
+            "filepath"
+          ],
+          "schema": [
+            {
+              "id": "filepath",
+              "displayName": "filepath",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "index",
+              "displayName": "index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        340
+      ],
+      "id": "8ca1a0d9-0c76-4db7-be3e-688d8bda9f59",
+      "name": "ReadFile"
+    },
+    {
+      "parameters": {
+        "description": "Call this Tool to write content to a file.",
+        "workflowId": {
+          "__rl": true,
+          "value": "u7hl7u0wQCVocscf",
+          "mode": "list",
+          "cachedResultName": "SubWriter"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "filepath": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filepath', ``, 'string') }}",
+            "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('content', ``, 'string') }}",
+            "index": "={{ $('Get Issues').item.json.taskNumber }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "filepath",
+              "displayName": "filepath",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "index",
+              "displayName": "index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -340,
+        360
+      ],
+      "id": "1181c705-345e-431a-be04-bcca4ed75c9a",
+      "name": "WriteFile"
+    },
+    {
+      "parameters": {
+        "description": "Call this Tool to get a complete overview over the files in the Repository",
+        "workflowId": {
+          "__rl": true,
+          "value": "UHtKpn5YXMzL3Nk5",
+          "mode": "list",
+          "cachedResultName": "My Sub-Workflow 3"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -60,
+        340
+      ],
+      "id": "a76d6575-1519-45e5-a894-fd047beaa5c9",
+      "name": "Tree",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "add",
+        "repositoryPath": "=/repos/repo_{{ $('Get Issues').item.json.taskNumber }}/{{ $('GetRepoName').item.json.stdout }}/",
+        "pathsToAdd": "=."
+      },
+      "type": "n8n-nodes-base.gitTool",
+      "typeVersion": 1,
+      "position": [
+        80,
+        340
+      ],
+      "id": "0a186454-824a-41e6-97ba-dda0cdaa253f",
+      "name": "Git"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8082/test",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"instance_id\": \"{{ $('Get Issues').item.json.instance_id }}\",\n  \"repoDir\": \"/repos/repo_{{ $('Get Issues').item.json.taskNumber }}/{{ $('GetRepoName').item.json.stdout }}\",\n  \"FAIL_TO_PASS\": {{ $('Get Issues').item.json.FAIL_TO_PASS }},\n  \"PASS_TO_PASS\": {{ $('Get Issues').item.json.PASS_TO_PASS }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        -120
+      ],
+      "id": "eda57528-b2bc-42c0-a572-d41ffe338b47",
+      "name": "HTTP Request1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.harnessOutput\n\nlet result = {};\n\ntry {\n  const innerJsonString = JSON.parse(rawOutput); \n\n  const topKey = Object.keys(innerJsonString)[0];\n  const testStatus = innerJsonString[topKey][\"tests_status\"];\n\n  [\"FAIL_TO_PASS\", \"PASS_TO_PASS\"].forEach(category => {\n    const successCount = testStatus[category]?.success?.length || 0;\n    const failureCount = testStatus[category]?.failure?.length || 0;\n\n    result[category] = {\n      success: successCount,\n      failure: failureCount\n    };\n  });\n\n} catch (err) {\n  throw new Error(\"Fehler beim Verarbeiten von harnessOutput: \" + err.message);\n}\n\nreturn [\n  {\n    json: result\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        -20
+      ],
+      "id": "4af6bf67-897d-48e8-aaf8-2f7bd4c95489",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst rawFAIL_TO_PASS = $('Get Issues').first().json.FAIL_TO_PASS;\nconst rawPASS_TO_PASS = $('Get Issues').first().json.PASS_TO_PASS;\n\n\nlet totalFAIL_TO_PASS = 0;\nlet totalPASS_TO_PASS = 0;\n\ntry {\n  const parsed = JSON.parse(rawFAIL_TO_PASS);\n  const parsed2 = JSON.parse(rawPASS_TO_PASS);\n  if (Array.isArray(parsed)) {\n    totalFAIL_TO_PASS = parsed.length;\n  } else {\n    throw new Error(\"Kein gültiges Array\");\n  }\n\n  if (Array.isArray(parsed2)) {\n    totalPASS_TO_PASS = parsed2.length;\n  } else {\n    throw new Error(\"Kein gültiges Array\");\n  }\n} catch (err) {\n  \n}\n\nreturn [\n  {\n    json: {\n      totalFAIL_TO_PASS,\n      totalPASS_TO_PASS\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -20
+      ],
+      "id": "e3e57e6f-ac61-4c94-ba3f-1cca6f4a57ea",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "fileName": "=/repos/LOG_FILE",
+        "options": {
+          "append": true
+        }
+      },
+      "id": "b35d8b8c-2161-41e1-b783-08db038755bc",
+      "name": "Write File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const content = $json[\"output\"] || \"\";\n\nconst buffer = Buffer.from(content, 'utf8');\n\nreturn [\n  {\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        mimeType: 'text/plain',\n        fileName: 'output.txt'\n      }\n    }\n  }\n];"
+      },
+      "id": "9fdd4028-e9cf-4da8-bb56-2e65dc097b55",
+      "name": "Create Binary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n\nlet output1 = \"----TESTCASE \"+$('Get Issues').first().json.taskNumber+\"----\\n\"\nlet output2 = \"FAIL_TO_PASS passed: \"+$('Code').first().json.FAIL_TO_PASS.success+\"/\"+$input.first().json.totalFAIL_TO_PASS+\"\\n\"\nlet output3 = \"PASS_TO_PASS passed: \"+$('Code').first().json.PASS_TO_PASS.success+\"/\"+$input.first().json.totalPASS_TO_PASS+\"\\n\\n\"\n\n\nreturn [\n  {\n    json: {\n        output: output1+output2+output3\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        -20
+      ],
+      "id": "c4dc543d-844e-401b-bf67-9be71ee45ca5",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ae22bca0-31b1-43d4-b9e5-9047b0fceca8",
+              "leftValue": "={{ $json.harnessOutput }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        100,
+        -80
+      ],
+      "id": "bd176aa5-d98c-45a5-b4d6-9f8867b93936",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n\nlet output1 = \"----TESTCASE \"+$('Get Issues').first().json.taskNumber+\"----\\n\"\nlet output2 = \"Testausführung nicht möglich, da kein Git Diff\\n\\n\"\n\n\nreturn [\n  {\n    json: {\n        output: output1+output2\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        220
+      ],
+      "id": "fe7278f8-51d6-4c64-a54f-8a8497fc7bdd",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=ls /repos/repo_{{ $('Get Issues').item.json.taskNumber }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        20
+      ],
+      "id": "a785a273-9da5-4d88-8ce7-9abe92aa540f",
+      "name": "GetRepoName"
+    },
+    {
+      "parameters": {
+        "operation": "status",
+        "repositoryPath": "=/repos/repo_{{ $('Get Issues').item.json.taskNumber }}/{{ $('GetRepoName').item.json.stdout }}/"
+      },
+      "type": "n8n-nodes-base.gitTool",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "id": "ae991f18-4f95-40e6-a2a9-debdbb1013b0",
+      "name": "Git1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -640,
+        360
+      ],
+      "id": "0db12b7f-e2ed-4273-b871-44e6250827b2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "IKWxLjO3DNYWHv0s",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nfor (let i = 1; i <= 30; i++) {\n  items.push({ json: { counter: i } });\n}\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        -100
+      ],
+      "id": "c2fdc18d-9489-4712-a7e3-cfd14a1a5566",
+      "name": "Generate Numbers"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1140,
+        -100
+      ],
+      "id": "a877ae0e-f157-4206-a144-cf797c697c8f",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Generate Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CLONE": {
+      "main": [
+        [
+          {
+            "node": "GetRepoName",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Issues": {
+      "main": [
+        [
+          {
+            "node": "CLONE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1-5 genrierer": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ReadFile": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WriteFile": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tree": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Git": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Binary": {
+      "main": [
+        [
+          {
+            "node": "Write File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Create Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetRepoName": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Git1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Numbers": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4239064-ab24-421b-9315-b27be7d01606",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2a2ba91bfe084453082bc30e3b8dcaea039b6ff20357bf7f8e2759837850e190"
+  },
+  "id": "Ayt0RSShdzyW3Dem",
+  "tags": []
+}

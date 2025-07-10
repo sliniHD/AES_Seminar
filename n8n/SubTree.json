@@ -1,0 +1,64 @@
+{
+  "name": "SubTree",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "repositori path"
+            }
+          ]
+        }
+      },
+      "id": "17175fd9-5bce-40b1-9393-5a115792fa74",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        700,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=cd {{ $json['repositori path'] }} && tree"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        880,
+        160
+      ],
+      "id": "bf0f951e-5a22-4d95-9381-f2cfe6a4c612",
+      "name": "TREE",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "TREE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a6f1bb09-1dfd-4ad5-b820-ca1bf3caf9ba",
+  "meta": {
+    "instanceId": "2a2ba91bfe084453082bc30e3b8dcaea039b6ff20357bf7f8e2759837850e190"
+  },
+  "id": "zavvfg0eRH1Ybj2x",
+  "tags": []
+}
